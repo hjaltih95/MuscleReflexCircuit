@@ -173,7 +173,7 @@ void MuscleReflexCircuit::extendConnectToModel(Model& model)
     }
     
     
-    auto interneuron = model.getComponent<Interneuron>("interneuron");
+    auto interneuron = model.getComponentList<Interneuron>();
 
     model.updComponent("interneuron").updInput("inputs").connect(SimpleSpindle->getOutput("spindle_length"));
     
