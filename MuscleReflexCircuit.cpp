@@ -172,10 +172,11 @@ void MuscleReflexCircuit::extendConnectToModel(Model& model)
         }
     }
     
+    ////////////////////////////////////
     
     auto interneuron = model.getComponentList<Interneuron>();
 
-    model.updComponent("interneuron").updInput("inputs").connect(SimpleSpindle->getOutput("spindle_length"));
+    model.updComponent("interneuron").updInput("inputs").connect(spindles->getOutput("spindle_length"));
     
     
 }
@@ -310,6 +311,7 @@ void MuscleReflexCircuit::computeControls(const SimTK::State &s, SimTK::Vector &
     const Set<const GolgiTendon>& golgis = getGolgiSet();
        
     // make a for loop for all the spindles and golgi tendon (we assume that the reflex controller employs the same muscles with both a golgi-tendon organ and a spindle)
+    /*
     for (int i = 0; i< spindles.getSize(); i++) {
         const SimpleSpindle& spindle = spindles.get(i);
         const GolgiTendon& golgi = golgis.get(i);
@@ -335,6 +337,39 @@ void MuscleReflexCircuit::computeControls(const SimTK::State &s, SimTK::Vector &
            // make a member function to get the refernce of the spindles that have the referneces to the muscles
         musc.addInControls(actControls, controls);
     }
+     */
+    
+    const SimpleSpindle& spindle = spindles.get(0);
+    const GolgiTendon& golgi = golgis.get(0);
+    const Muscle& musc = getMuscle();
+    auto* interneuron = new Interneuron("interneuron", musc, 0.5);
+    
+
+    
+    interneuron->updInput("inputs").connect(spindle.getOutput("spindle_length"));
+    interneuron->updInput("inputs").connect(spindle.getOutput("spindle_speed"));
+    interneuron->updInput("inputs").connect(golgi.getOutput("golgiLength"));
+    
+    
+    stretch = spindle.getSpindleLength(s);
+    speed = spindle.getSpindleSpeed(s);
+    tendon_length = golgi.getTendonLength(s);
+
+    
+    f_o = musc.getOptimalFiberLength();
+    t_o = musc.getTendonSlackLength();
+    max_speed = f_o*musc.getMaxContractionVelocity();
+        
+    
+    control = 0.5*k_l*(fabs(stretch)+stretch)/f_o;
+    control += 0.5*k_v*(fabs(speed)+speed)/max_speed;
+    control += 0.5*k_t*(fabs(tendon_length)+tendon_length)/t_o;
+        
+
+    SimTK::Vector actControls(1,control);
+        // add reflex controls to whatever controls are already in place.
+        // make a member function to get the refernce of the spindles that have the referneces to the muscles
+    musc.addInControls(actControls, controls);
 }
 
 
