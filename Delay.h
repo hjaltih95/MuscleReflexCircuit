@@ -32,6 +32,7 @@
 #include "OpenSim/Simulation/Model/Muscle.h"
 #include "OpenSim/Common/PiecewiseLinearFunction.h"
 #include "OpenSim/Simulation/Model/Model.h"
+#include "OpenSim/Simulation/Model/ModelComponent.h"
 
 
 
@@ -41,9 +42,9 @@ namespace OpenSim {
 //=============================================================================
 /**
  * ToyReflexController is a concrete controller that excites muscles in response
- * to muscle lengthening to simulate a simple stretch reflex. This controller 
+ * to muscle lengthening to simulate a simple stretch reflex. This controller
  * is meant to serve as an example how to implement a controller in
- * OpenSim. It is intended for demonstration purposes only. 
+ * OpenSim. It is intended for demonstration purposes only.
  *
  * @author  Ajay Seth
  */
@@ -54,7 +55,7 @@ public:
 //=============================================================================
 // INPUT
 //=============================================================================
-    // Input the signal from the proprioceptors 
+    // Input the signal from the proprioceptors
     OpenSim_DECLARE_INPUT(signal, double, SimTK::Stage::Position,
         "The signal from the proprieceptors");
     
@@ -68,7 +69,7 @@ public:
 //==============================================================================
 // SOCKETS
 //==============================================================================
-    OpenSim_DECLARE_SOCKET(muscle, Muscle, "The muscle that has the spindle and golgi tendon");
+    OpenSim_DECLARE_SOCKET(muscle, Muscle, "The muscle that will have delayed muscle signals");
     
 //=============================================================================
 // OUTPUTS
@@ -85,11 +86,11 @@ public:
     /** Default constructor. */
     Delay();
     Delay(const std::string& name,
-                const Muscle& muscle,
-                double delay,
-                double defaultControlSignal);
+          const Muscle& muscle,
+          double delay,
+          double defaultControlSignal);
 
-    // Uses default (compiler-generated) destructor, copy constructor and copy 
+    // Uses default (compiler-generated) destructor, copy constructor and copy
     // assignment operator.
     
 //--------------------------------------------------------------------------
@@ -98,9 +99,15 @@ public:
     
   // SOCKET get/set
     
-    // get a reference to the muscle the golgi tendon is attatched to
+    // A reference to the muscle that is having delayed muscle signals
     const Muscle& getMuscle() const;
+
+    void setDelayValue(double delay);
+    double getDelayValue() const;
     
+    void setDefaultSignal(double defaultControlSignal);
+    double getDefaultSignal() const;
+          
 
 //--------------------------------------------------------------------------
 // GOLGI TENDON STATE DEPENDENT ACCESSORS
@@ -109,6 +116,7 @@ public:
     Get quanitites of interest common to all spindles*/
     void setSignal(SimTK::State& s, double controlSignal) const;
     double getSignal(const SimTK::State& s) const;
+    
         
 
 private:
@@ -119,7 +127,7 @@ private:
     // ModelComponent interface to add computational elemetns to the SimTK system
     void addToSystem(SimTK::MultibodySystem& system) const;
     
-    mutable OpenSim::Set<PiecewiseLinearFunction> muscleHistory;
+    mutable PiecewiseLinearFunction muscleHistory;
 
     
 protected:
@@ -131,5 +139,4 @@ protected:
 //=============================================================================
 
 #endif // OPENSIM_Delay_H_
-
 

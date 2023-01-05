@@ -30,9 +30,6 @@
 #include <OpenSim/OpenSim.h>
 
 
-
-
-
 // This allows us to use OpenSim functions, classes, etc., without having to
 // prefix the names of those things with "OpenSim::".
 using namespace OpenSim;
@@ -53,19 +50,23 @@ MuscleReflexCircuit::MuscleReflexCircuit()
 /* Convenience constructor. */
 MuscleReflexCircuit::MuscleReflexCircuit(const std::string& name,
                                          const Muscle& muscle,
-                                         double gain_l,
-                                         double gain_v,
-                                         double gain_t)
+                                         const SimpleSpindle& spindle,
+                                         const GolgiTendon& golgi,
+                                         double threshold,
+                                         double timeDelay,
+                                         double defaultControlSignal)
 {
     OPENSIM_THROW_IF(name.empty(), ComponentHasNoName, getClassName());
        
     setName(name);
     connectSocket_muscle(muscle);
+    connectSocket_spindle(spindle);
+    connectSocket_golgi(golgi);
     
     constructProperties();
-    set_gain_length(gain_l);
-    set_gain_velocity(gain_v);
-    set_gain_tendon(gain_t);
+    set_threshold(threshold);
+    set_timeDelay(timeDelay);
+    set_defaultControlSignal(defaultControlSignal);
 
 
 }
@@ -90,14 +91,10 @@ MuscleReflexCircuit::MuscleReflexCircuit(const std::string& name,
  */
 void MuscleReflexCircuit::constructProperties()
 {
-    constructProperty_gain_length(1.0);
-    constructProperty_gain_velocity(1.0);
-    constructProperty_gain_tendon(1.0);
-    constructProperty_golgi_list();
-    constructProperty_spindle_list();
-    
-    _spindleSet.setMemoryOwner(false);
-    _golgiSet.setMemoryOwner(false);
+    constructProperty_defaultControlSignal(1.0);
+    constructProperty_timeDelay(0.1);
+    constructProperty_threshold(0.5);
+    constructProperty_weights();
 }
 
 
@@ -105,179 +102,92 @@ void MuscleReflexCircuit::extendConnectToModel(Model& model)
 {
     Super::extendConnectToModel(model);
     
-    _spindleSet.setMemoryOwner(false);
-    _spindleSet.setSize(0);
+    // connect inputs to outputs here
     
-    int nac = getProperty_spindle_list().size();
-    if (nac == 0)
-        return;
+    const SimpleSpindle spindle = getSpindle();
+    const GolgiTendon golgi = getGolgi();
+     
+    Interneuron& interneuron = updInterneuron();
+    Delay& delay = updDelay();
     
-    auto spindles = model.getComponentList<SimpleSpindle>();
-    if (IO::Uppercase(get_spindle_list(0)) == "ALL") {
-        for (auto& spindle : spindles) {
-            _spindleSet.adoptAndAppend(&spindle);
-        }
-        return;
-    }
+    // connect the interneuron inputs to the spindle and golgi outputs
+    interneuron.updInput("afferents").connect(spindle.getOutput("spindle_length"));
+    interneuron.updInput("afferents").connect(spindle.getOutput("spindle_speed"));
+    interneuron.updInput("afferents").connect(golgi.getOutput("golgiLength"));
     
-    else {
-        for (int i = 0; i < nac; i++) {
-            bool found = false;
-            for (auto& spindle : spindles) {
-                if (get_spindle_list(i) == spindle.getName()) {
-                    _spindleSet.adoptAndAppend(&spindle);
-                    found = true;
-                    break;
-                }
-            }
-            if (!found) {
-                cerr << "WARN: MuscleReflexCircuit::connectToModel : SimpleSpindle "
-                << get_spindle_list(i) <<
-                " was not found and will be ignored." << endl;
-            }
-        }
-    }
-    
-    
-    _golgiSet.setMemoryOwner(false);
-    _golgiSet.setSize(0);
-    
-    int nac1 = getProperty_golgi_list().size();
-    if (nac1 == 0)
-        return;
-    
-    auto golgis = model.getComponentList<GolgiTendon>();
-    if (IO::Uppercase(get_golgi_list(0)) == "ALL") {
-        for (auto& golgi : golgis) {
-            _golgiSet.adoptAndAppend(&golgi);
-        }
-        return;
-    }
-    
-    else {
-        for (int i = 0; i < nac1; i++) {
-            bool found = false;
-            for (auto& golgi : golgis) {
-                if (get_golgi_list(i) == golgi.getName()) {
-                    _golgiSet.adoptAndAppend(&golgi);
-                    found = true;
-                    break;
-                }
-            }
-            if (!found) {
-                cerr << "WARN: MuscleReflexCircuit::connectToModel : GolgiTendon "
-                << get_golgi_list(i) <<
-                " was not found and will be ignored." << endl;
-            }
-        }
-    }
-    
-    ////////////////////////////////////
-    
-    auto interneuron = model.getComponentList<Interneuron>();
+    // Connect the delay component input to the interneuron output
+    delay.updInput("signal").connect(interneuron.getOutput("signal"));
 
-    model.updComponent("interneuron").updInput("inputs").connect(spindles->getOutput("spindle_length"));
-    
-    
 }
-//------------------------------------------------------------------------------
-// Getters and setters for the Muscle Reflex circuit for the subcomponents
-//------------------------------------------------------------------------------
 
-/*
-void MuscleReflexCircuit::addInterneuronToModel(Model& model)
+void MuscleReflexCircuit::extendFinalizeFromProperties()
 {
-    auto interngiteuron = new Interneuron();
-    interneuron.setName("interneuron");
-    interneuron.addComponent(interneuron);
+    Super::extendFinalizeFromProperties();
+    
+    
+    //const double& weight[4] = {0,1,2,3};
+    const auto& weights = getProperty_weights();
+    
+    Interneuron& interneuron = upd_Interneuron();
+    Delay& delay = upd_Delay();
+    
+    // Setup the property values for the interneuron and delay component
+    interneuron.setWeights(weights);   //  kíkja á const Property<double> (getWeights functionið, kannski hægt að gera bara Array<double> í staðinn)
+    interneuron.setThreshold(get_threshold());
+    delay.setDelayValue(get_timeDelay());
+    delay.setDefaultSignal(get_defaultControlSignal());
+    
+    
+    OPENSIM_THROW_IF_FRMOBJ(get_timeDelay() < SimTK::Eps, InvalidPropertyValue, getName(), "Delay value cannot be less than SimTK::Eps, if it is we throw the delay component from the simulation");
+     
 }
 
-void MuscleReflexCircuit::addDelayToModel(Model& model)
-{
-    auto delay = new Delay();
-    delay.setName("delay");
-    model.addComponent(delay);
-    
-    addInterneuronToModel(model);
-    
-    // Connect the interneuron's output to the delay's signal input
-    
-    model.updComponent("delay").updInput("signal").connect(Interneuron->getOutput("signal"));
-}
 
-void MuscleReflexCircuit::addSpindleToModel(Model& model)
-{
-    auto spindle = new SimpleSpindle();
-    spindle.setName("spindle");
-    model.addComponent(spindle);
-    
-}
+// create finalizefromproperties and check there for delay (use eps as lowest number of delay)
 
-void MuscleReflexCircuit::addGolgiToModel(Model& model)
-{
-    auto golgi = new GolgiTendon();
-    golgi.setName("golgi");
-    model.addComponent(golgi);
-}
-*/
 //=============================================================================
 // GET AND SET
 //=============================================================================
 
 //-----------------------------------------------------------------------------
-//
+// Properties
+//-----------------------------------------------------------------------------
+
+Delay& MuscleReflexCircuit::updDelay()
+{
+    return upd_Delay();
+}
+const Delay& MuscleReflexCircuit::getDelay() const
+{
+    return get_Delay();
+}
+
+Interneuron& MuscleReflexCircuit::updInterneuron()
+{
+    return upd_Interneuron();
+}
+const Interneuron& MuscleReflexCircuit::getInterneuron() const
+{
+    return get_Interneuron();
+}
+//-----------------------------------------------------------------------------
+// SOCKETS
 //-----------------------------------------------------------------------------
 const Muscle& MuscleReflexCircuit::getMuscle() const
 {
     return getSocket<Muscle>("muscle").getConnectee();
 }
 
-// Spindles getter and setters
-void MuscleReflexCircuit::setSpindles(const Set<SimpleSpindle>& spindles)
+const SimpleSpindle& MuscleReflexCircuit::getSpindle() const
 {
-    _spindleSet.setMemoryOwner(false);
-    
-    _spindleSet.setSize(0);
-    updProperty_spindle_list().clear();
-    for (int i = 0; i<spindles.getSize(); i++) {
-        addSpindle(spindles[i]);
-    }
+    return getSocket<SimpleSpindle>("spindle").getConnectee();
 }
 
-void MuscleReflexCircuit::addSpindle(const SimpleSpindle& spindle) {
-    _spindleSet.adoptAndAppend(&spindle);
-    
-    int found = updProperty_spindle_list().findIndex(spindle.getName());
-    if (found < 0)
-        updProperty_spindle_list().appendValue(spindle.getName());
-}
-
-Set <const SimpleSpindle>& MuscleReflexCircuit::updSpindles() { return _spindleSet; }
-
-const Set<const SimpleSpindle>& MuscleReflexCircuit::getSpindleSet() const { return _spindleSet; }
-
-
-// Golgi Tendon getters and setters
-void MuscleReflexCircuit::setGolgis(const Set<GolgiTendon>& golgis)
+const GolgiTendon& MuscleReflexCircuit::getGolgi() const
 {
-    _golgiSet.setMemoryOwner(false);
-    updProperty_golgi_list().clear();
-    for (int i = 0; i < golgis.getSize(); i++) {
-        addGolgi(golgis[i]);
-    }
-}
-void MuscleReflexCircuit::addGolgi(const GolgiTendon& golgi)
-{
-    _golgiSet.adoptAndAppend(&golgi);
-    
-    int found = updProperty_golgi_list().findIndex(golgi.getName());
-    if (found < 0)
-        updProperty_golgi_list().appendValue(golgi.getName());
+    return getSocket<GolgiTendon>("golgi").getConnectee();
 }
 
-Set <const GolgiTendon>& MuscleReflexCircuit::updGolgis() { return _golgiSet; }
-
-const Set< const GolgiTendon>& MuscleReflexCircuit::getGolgiSet() const { return _golgiSet; }
 
 
 //=============================================================================
@@ -290,86 +200,16 @@ const Set< const GolgiTendon>& MuscleReflexCircuit::getGolgiSet() const { return
  * @param s         current state of the system
  */
 
-void MuscleReflexCircuit::computeControls(const SimTK::State &s, SimTK::Vector &controls) const
+double MuscleReflexCircuit::getMuscleSignal(const SimTK::State &s) const
 {
-    double t = s.getTime();
+    double muscle_signal = 0;
+     
+    const Delay delay = getDelay();
+    
+    muscle_signal = delay.getSignal(s);
+    
+    return muscle_signal;
 
-    double t_o = 1;
-    double f_o = 1;
-    double stretch = 0;
-    //reflex control
-    double control = 0;
-    double tendon_length = 0;
-    double speed = 0;
-    double max_speed = 0;
-    double k_l = get_gain_length();
-    double k_v = get_gain_velocity();
-    double k_t = get_gain_tendon();
-    
-       
-    const Set<const SimpleSpindle>& spindles = getSpindleSet();
-    const Set<const GolgiTendon>& golgis = getGolgiSet();
-       
-    // make a for loop for all the spindles and golgi tendon (we assume that the reflex controller employs the same muscles with both a golgi-tendon organ and a spindle)
-    /*
-    for (int i = 0; i< spindles.getSize(); i++) {
-        const SimpleSpindle& spindle = spindles.get(i);
-        const GolgiTendon& golgi = golgis.get(i);
-           
-        stretch = spindle.getSpindleLength(s);
-        speed = spindle.getSpindleSpeed(s);
-        tendon_length = golgi.getTendonLength(s);
-
-        const Muscle& musc = spindle.getMuscle();
-       
-        f_o = musc.getOptimalFiberLength();
-        t_o = musc.getTendonSlackLength();
-        max_speed = f_o*musc.getMaxContractionVelocity();
-           
-       
-        control = 0.5*k_l*(fabs(stretch)+stretch)/f_o;
-        control += 0.5*k_v*(fabs(speed)+speed)/max_speed;
-        control += 0.5*k_t*(fabs(tendon_length)+tendon_length)/t_o;
-           
-
-        SimTK::Vector actControls(1,control);
-           // add reflex controls to whatever controls are already in place.
-           // make a member function to get the refernce of the spindles that have the referneces to the muscles
-        musc.addInControls(actControls, controls);
-    }
-     */
-    
-    const SimpleSpindle& spindle = spindles.get(0);
-    const GolgiTendon& golgi = golgis.get(0);
-    const Muscle& musc = getMuscle();
-    auto* interneuron = new Interneuron("interneuron", musc, 0.5);
-    
-
-    
-    interneuron->updInput("inputs").connect(spindle.getOutput("spindle_length"));
-    interneuron->updInput("inputs").connect(spindle.getOutput("spindle_speed"));
-    interneuron->updInput("inputs").connect(golgi.getOutput("golgiLength"));
-    
-    
-    stretch = spindle.getSpindleLength(s);
-    speed = spindle.getSpindleSpeed(s);
-    tendon_length = golgi.getTendonLength(s);
-
-    
-    f_o = musc.getOptimalFiberLength();
-    t_o = musc.getTendonSlackLength();
-    max_speed = f_o*musc.getMaxContractionVelocity();
-        
-    
-    control = 0.5*k_l*(fabs(stretch)+stretch)/f_o;
-    control += 0.5*k_v*(fabs(speed)+speed)/max_speed;
-    control += 0.5*k_t*(fabs(tendon_length)+tendon_length)/t_o;
-        
-
-    SimTK::Vector actControls(1,control);
-        // add reflex controls to whatever controls are already in place.
-        // make a member function to get the refernce of the spindles that have the referneces to the muscles
-    musc.addInControls(actControls, controls);
 }
 
 

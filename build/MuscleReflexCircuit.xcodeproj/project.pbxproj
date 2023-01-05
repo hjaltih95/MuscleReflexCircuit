@@ -35,6 +35,11 @@
 
 /* Begin PBXBuildFile section */
 		5A37CECE8DA44D2188E2D311 /* MuscleReflexCircuit.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 5002C9296389480FA74E6EA0 /* MuscleReflexCircuit.cpp */; };
+		EF9A7BF227F399A80073D2E2 /* Interneuron.cpp in Sources */ = {isa = PBXBuildFile; fileRef = EF9A7BF127F399A80073D2E2 /* Interneuron.cpp */; };
+		EF9A7BF427F399BC0073D2E2 /* Delay.cpp in Sources */ = {isa = PBXBuildFile; fileRef = EF9A7BF327F399BC0073D2E2 /* Delay.cpp */; };
+		EF9A7BF627F399CF0073D2E2 /* GolgiTendon.cpp in Sources */ = {isa = PBXBuildFile; fileRef = EF9A7BF527F399CF0073D2E2 /* GolgiTendon.cpp */; };
+		EF9A7BF827F399E20073D2E2 /* SimpleSpindle.cpp in Sources */ = {isa = PBXBuildFile; fileRef = EF9A7BF727F399E20073D2E2 /* SimpleSpindle.cpp */; };
+		EF9A7BFA27F3DFCF0073D2E2 /* mainSimulation.cpp in Sources */ = {isa = PBXBuildFile; fileRef = EF9A7BF927F3DFCF0073D2E2 /* mainSimulation.cpp */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -75,6 +80,11 @@
 		EF960BB027A2D30500917E5B /* osimInterneuronDLL.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = osimInterneuronDLL.h; sourceTree = "<group>"; };
 		EF960BB127A2D31B00917E5B /* osimGolgiTendonDLL.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = osimGolgiTendonDLL.h; sourceTree = "<group>"; };
 		EF960BB227A2D32A00917E5B /* osimSimpleSpindleDLL.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = osimSimpleSpindleDLL.h; sourceTree = "<group>"; };
+		EF9A7BF127F399A80073D2E2 /* Interneuron.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Interneuron.cpp; sourceTree = "<group>"; };
+		EF9A7BF327F399BC0073D2E2 /* Delay.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Delay.cpp; sourceTree = "<group>"; };
+		EF9A7BF527F399CF0073D2E2 /* GolgiTendon.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = GolgiTendon.cpp; sourceTree = "<group>"; };
+		EF9A7BF727F399E20073D2E2 /* SimpleSpindle.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = SimpleSpindle.cpp; sourceTree = "<group>"; };
+		EF9A7BF927F3DFCF0073D2E2 /* mainSimulation.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = mainSimulation.cpp; sourceTree = "<group>"; };
 		FD20F33E8AD94E71A6CB2AEA /* MuscleReflexCircuit.h */ = {isa = PBXFileReference; explicitFileType = sourcecode.c.h; fileEncoding = 4; path = MuscleReflexCircuit.h; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
@@ -110,6 +120,11 @@
 			isa = PBXGroup;
 			children = (
 				5002C9296389480FA74E6EA0 /* MuscleReflexCircuit.cpp */,
+				EF9A7BF927F3DFCF0073D2E2 /* mainSimulation.cpp */,
+				EF9A7BF727F399E20073D2E2 /* SimpleSpindle.cpp */,
+				EF9A7BF527F399CF0073D2E2 /* GolgiTendon.cpp */,
+				EF9A7BF327F399BC0073D2E2 /* Delay.cpp */,
+				EF9A7BF127F399A80073D2E2 /* Interneuron.cpp */,
 			);
 			name = "Source Files";
 			sourceTree = "<group>";
@@ -244,6 +259,11 @@
 			buildActionMask = 2147483647;
 			files = (
 				5A37CECE8DA44D2188E2D311 /* MuscleReflexCircuit.cpp in Sources */,
+				EF9A7BF827F399E20073D2E2 /* SimpleSpindle.cpp in Sources */,
+				EF9A7BF227F399A80073D2E2 /* Interneuron.cpp in Sources */,
+				EF9A7BF627F399CF0073D2E2 /* GolgiTendon.cpp in Sources */,
+				EF9A7BF427F399BC0073D2E2 /* Delay.cpp in Sources */,
+				EF9A7BFA27F3DFCF0073D2E2 /* mainSimulation.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -320,10 +340,7 @@
 				COMBINE_HIDPI_IMAGES = YES;
 				EXECUTABLE_PREFIX = "";
 				EXECUTABLE_SUFFIX = "";
-				FRAMEWORK_SEARCH_PATHS = (
-					/Applications/Xcode_12.4.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX11.1.sdk/System/Library/Frameworks,
-					"$(inherited)",
-				);
+				FRAMEWORK_SEARCH_PATHS = "";
 				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
 				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
 				GCC_OPTIMIZATION_LEVEL = 0;
@@ -387,10 +404,7 @@
 				COMBINE_HIDPI_IMAGES = YES;
 				EXECUTABLE_PREFIX = "";
 				EXECUTABLE_SUFFIX = "";
-				FRAMEWORK_SEARCH_PATHS = (
-					/Applications/Xcode_12.4.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX11.1.sdk/System/Library/Frameworks,
-					"$(inherited)",
-				);
+				FRAMEWORK_SEARCH_PATHS = "";
 				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
 				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
 				GCC_OPTIMIZATION_LEVEL = s;
@@ -615,10 +629,7 @@
 				COMBINE_HIDPI_IMAGES = YES;
 				EXECUTABLE_PREFIX = "";
 				EXECUTABLE_SUFFIX = "";
-				FRAMEWORK_SEARCH_PATHS = (
-					/Applications/Xcode_12.4.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX11.1.sdk/System/Library/Frameworks,
-					"$(inherited)",
-				);
+				FRAMEWORK_SEARCH_PATHS = "";
 				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
 				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
 				GCC_OPTIMIZATION_LEVEL = 3;
@@ -675,10 +686,7 @@
 				COMBINE_HIDPI_IMAGES = YES;
 				EXECUTABLE_PREFIX = "";
 				EXECUTABLE_SUFFIX = "";
-				FRAMEWORK_SEARCH_PATHS = (
-					/Applications/Xcode_12.4.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX11.1.sdk/System/Library/Frameworks,
-					"$(inherited)",
-				);
+				FRAMEWORK_SEARCH_PATHS = "";
 				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
 				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
 				GCC_OPTIMIZATION_LEVEL = 2;

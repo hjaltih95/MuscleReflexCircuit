@@ -28,7 +28,6 @@
 // INCLUDE
 //============================================================================
 #include "osimMuscleReflexCircuitDLL.h"
-#include "OpenSim/Simulation/Control/Controller.h"
 #include "OpenSim/Simulation/Model/Muscle.h"
 #include "OpenSim/Simulation/Model/Model.h"
 #include "OpenSim/Simulation/Model/ModelComponent.h"
@@ -38,6 +37,8 @@
 #include "Interneuron.h"
 
 namespace OpenSim {
+
+
 
 //=============================================================================
 //=============================================================================
@@ -49,8 +50,8 @@ namespace OpenSim {
  *
  * @author  Ajay Seth
  */
-class OSIMMUSCLEREFLEXCIRCUIT_API MuscleReflexCircuit : public Controller {
-OpenSim_DECLARE_CONCRETE_OBJECT(MuscleReflexCircuit, Controller);
+class OSIMMUSCLEREFLEXCIRCUIT_API MuscleReflexCircuit : public ModelComponent {
+OpenSim_DECLARE_CONCRETE_OBJECT(MuscleReflexCircuit, ModelComponent);
 
 public:
 //=============================================================================
@@ -60,27 +61,40 @@ public:
 //=============================================================================
 // PROPERTIES
 //=============================================================================
-    OpenSim_DECLARE_LIST_PROPERTY(spindle_list, std::string, "The spindles that are attatched to the muscle");
-    
-    OpenSim_DECLARE_LIST_PROPERTY(golgi_list, std::string, "The golgi tendons that are attatched to the msucle");
 
-    OpenSim_DECLARE_PROPERTY(gain_length, double,
-    "The factor by which the stretch reflex is scaled.");
+    OpenSim_DECLARE_PROPERTY(threshold, double, "The threshold property for the interneuron");
     
-    OpenSim_DECLARE_PROPERTY(gain_velocity, double, "The factor by which the stretch reflex speed is scaled");
+    OpenSim_DECLARE_PROPERTY(timeDelay, double, "The delay for the delay component");
     
-    OpenSim_DECLARE_PROPERTY(gain_tendon, double, "The factor by which the tendons reflex is scaled");
+    OpenSim_DECLARE_PROPERTY(defaultControlSignal, double, "The default control signal to send while the signal has not yet gotten their delaied signal");
+    
+    OpenSim_DECLARE_LIST_PROPERTY(weights, double, "The weights given to the input signals of the interneuron, can not sum to more than 1 and are between 0 and 1,");
+    
+    OpenSim_DECLARE_UNNAMED_PROPERTY(Delay, "The delay component that will delay the muscle signal");
+    
+    OpenSim_DECLARE_UNNAMED_PROPERTY(Interneuron, "The interneuron component that takes in mucle sensor signals and sends an ouput signal if the muscle activation is large enough");
+    
+    /*
+    OpenSim_DECLARE_LIST_PROPERTY(interneuron_list, std::string, "The list of model interneurons that this controller will depend upon for control");
+    
+    OpenSim_DECLARE_PROPERTY(delay_list, std::string, "The list of model delay components that this controller will depend upon");
+    */
     
 //==============================================================================
 // SOCKETS
 //==============================================================================
     OpenSim_DECLARE_SOCKET(muscle, Muscle, "The muscle that is being controlled");
     
+    OpenSim_DECLARE_SOCKET(spindle, SimpleSpindle, "The spindle that is sending out muscle length and muscle lengthening speed");
+    
+    OpenSim_DECLARE_SOCKET(golgi, GolgiTendon, "The Golgi-Tendon Organ that is sending out muscle tendon length");
+    
     
 //=============================================================================
 // OUTPUTS
 //=============================================================================
 
+    OpenSim_DECLARE_OUTPUT(muscle_signal, double, getMuscleSignal, SimTK::Stage::Velocity);
 //=============================================================================
 // METHODS
 //=============================================================================
@@ -91,55 +105,60 @@ public:
     MuscleReflexCircuit();
     MuscleReflexCircuit(const std::string& name,
                         const Muscle& muscle,
-                        double gain_l,
-                        double gain_v,
-                        double gain_t);
+                        const SimpleSpindle& spindle,
+                        const GolgiTendon& golgi,
+                        double threshold,
+                        double timeDelay,
+                        double defaultControlSignal);
 
     // Uses default (compiler-generated) destructor, copy constructor and copy 
     // assignment operator.
     
 //--------------------------------------------------------------------------
-// Muscle Reflex Circuit PARAMETER ACCESSORS
+// Muslce Reflex Circuit property getters and setters
 //--------------------------------------------------------------------------
     
-  // SOCKET get/set
+    Delay& updDelay();
+    const Delay& getDelay() const;
+    
+    Interneuron& updInterneuron();
+    const Interneuron& getInterneuron() const;
+    
+    
+//--------------------------------------------------------------------------
+// Muscle Reflex Circuit Socket getters and setters
+//--------------------------------------------------------------------------
     
     // get a reference to the muscle that the muscle reflex circuit is acting upon
     const Muscle& getMuscle() const;
     
+    // get a reference to the spindle attatched to the muscle
+    const SimpleSpindle& getSpindle() const;
+    
+    // get a reference to the golgi attatched to the muscle
+    const GolgiTendon& getGolgi() const;
+    
 
 //--------------------------------------------------------------------------
-// Muslce Reflex Circuit interface
+// Muslce Reflex Circuit output getters and setters
 //--------------------------------------------------------------------------
 /** @name Golgi Tendon State Dependendt Access Methods
     Get quanitites of interest common to all spindles*/
+   /*
+    void setInterneurons(const Set<Interneuron>& interneurons);
+    void addInterneuron(const Interneuron& interneuron);
+    const Set<const Interneuron>& getInterneuronSet() const;
+    Set<const Interneuron>& updInterneurons();
     
-    /** replace the current set of spindles with the provided set*/
-    void setSpindles(const Set<SimpleSpindle>& spindles);
-    /**add the current set of spindles*/
-    void addSpindle(const SimpleSpindle& spindle);
-    /**get a const refernece to the current set of spindles*/
-    const Set<const SimpleSpindle>& getSpindleSet() const;
-    /** get a writable reference to the set of const spindles for this controllerr*/
-    Set<const SimpleSpindle>& updSpindles();
-    
-
-    /** replace the current set of golgi-tendons with the provided set*/
-    void setGolgis(const Set<GolgiTendon>& golgis);
-    /**add the current set of golgi-tendons*/
-    void addGolgi(const GolgiTendon& golgi);
-    /**get a const refernece to the current set of golgi-tendons*/
-    const Set<const GolgiTendon>& getGolgiSet() const;
-    /** get a writable reference to the set of const gogli-tendons for this controllerr*/
-    Set<const GolgiTendon>& updGolgis();
-    
-    
-    /*
-    void setInterneuron(const Interneuron& interneuron);
-    const Interneuron& getInterneuron() const;
+    void setDelays(const Set<Delay>& delays);
+    void addDelay(const Delay& delay);
+    const Set<const Delay>& getDelaySet() const;
+    Set<const Delay>& updDelays();
     */
     
-    void computeControls(const SimTK::State& s, SimTK::Vector& controls) const override;
+    void setMuscleSignal(SimTK::State& s, double muscle_signal) const;
+    double getMuscleSignal(const SimTK::State& s) const;
+    
 
 private:
     // Connect properties to local pointers.  */
@@ -147,12 +166,12 @@ private:
     // ModelComponent interface to connect this component to its model
     void extendConnectToModel(Model& aModel) override;
     
-    Set<const SimpleSpindle> _spindleSet;
+    void extendFinalizeFromProperties() override;
+    /*
+    Set<const Interneuron> _interneuronSet;
+    Set<const Delay> _delaySet;
+     */
     
-    Set<const GolgiTendon> _golgiSet;
-    
-
-
     
 protected:
     //=========================================================================

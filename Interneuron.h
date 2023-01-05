@@ -45,9 +45,9 @@ namespace OpenSim {
  * is meant to serve as an example how to implement a controller in
  * OpenSim. It is intended for demonstration purposes only.
  *
- * @author  Ajay Seth
+ * @author  Hjalti Hilmarsson
  */
-//template<typename InputT = SimTK::Real>
+
 class OSIMINTERNEURON_API Interneuron : public ModelComponent {
 OpenSim_DECLARE_CONCRETE_OBJECT(Interneuron, ModelComponent);
 
@@ -56,23 +56,23 @@ public:
 // INPUT
 //=============================================================================
     // Input the signal from the proprioceptors
-    OpenSim_DECLARE_LIST_INPUT(inputs, double, SimTK::Stage::Velocity,
+    OpenSim_DECLARE_LIST_INPUT(afferents, double, SimTK::Stage::Velocity,
         "The input signals from the proprieceptors");
+
     
 //=============================================================================
 // PROPERTIES
 //=============================================================================
-    OpenSim_DECLARE_PROPERTY(threshold, double, "The magnitude of activation required to send an output signal");
+    OpenSim_DECLARE_PROPERTY(threshold, double, "The magnitude of activation required to send an output signal, greater than 0 and less or equal to 1");
     
-    //OpenSim_DECCLARE_PROPERTY(default_weights, double, "The default weights are applied when no specific weights are applied; default weights are 1/(number of inputs)");
+    //OpenSim_DECCLARE_PROPERTY(default_weights, bool, "Performs a check to see weather default weights are applied, 1/(number of inputs), or specific weights are applied; this is true by default.");
     
-    //OpenSim_DECLARE_LIST_PROPERTY(weights, double, "the weights given to the differnet inputs for the interneuron");
+    OpenSim_DECLARE_LIST_PROPERTY(weights, double, "The weights given to the input signals, can not sum to more than 1 and are between 0 and 1, ");
     
 //==============================================================================
 // SOCKETS
 //==============================================================================
-    OpenSim_DECLARE_SOCKET(muscle, Muscle, "The muscle that has the spindle and golgi tendon");
-    
+ 
 //=============================================================================
 // OUTPUTS
 //=============================================================================
@@ -88,7 +88,6 @@ public:
     /** Default constructor. */
     Interneuron();
     Interneuron(const std::string& name,
-                const Muscle& muscle,
                 double threshold);
 
     // Uses default (compiler-generated) destructor, copy constructor and copy
@@ -98,11 +97,12 @@ public:
 // Interneuron PARAMETER ACCESSORS
 //--------------------------------------------------------------------------
     
-  // SOCKET get/set
+  // get and set the weights
+    void setWeights(const Property<double>& weights);
+    const Property<double>& getWeights() const;
     
-    // get a reference to the muscle the golgi tendon is attatched to
-    const Muscle& getMuscle() const;
-    
+    void setThreshold(double threshold);
+    double getThreshold() const;
 
 //--------------------------------------------------------------------------
 // Interneuron STATE DEPENDENT ACCESSORS
@@ -135,9 +135,11 @@ private:
     void constructProperties();
     // ModelComponent interface to connect this component to its model
     void extendConnectToModel(Model& aModel) override;
+        void extendFinalizeFromProperties() override;
 
-    
 protected:
+    
+
     //=========================================================================
 };  // END of class Interneuron
 
@@ -146,4 +148,3 @@ protected:
 //=============================================================================
 
 #endif // OPENSIM_Interneuron_H_
-

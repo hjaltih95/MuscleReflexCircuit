@@ -37,8 +37,6 @@
 namespace OpenSim {
 
 
-// Forward declarations of classes that are used by the spindle implementation
-class Actuator;
 
 
 //=============================================================================
@@ -133,4 +131,5 @@ protected:
 //=============================================================================
 
 #endif // OPENSIM_SimpleSpindle_H_
+
 
